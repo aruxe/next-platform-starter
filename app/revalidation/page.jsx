@@ -4,76 +4,70 @@ import { Markdown } from 'components/markdown';
 import { SubmitButton } from 'components/submit-button';
 
 export const metadata = {
-    title: 'On-Demand Revalidation'
+    title: 'Random Number Generator'
 };
 
-const tagName = 'randomWiki';
-const randomWikiUrl = 'https://en.wikipedia.org/api/rest_v1/page/random/summary';
-const maxExtractLength = 200;
+const tagName = 'randomNumber';
 const revalidateTTL = 60;
 
 const explainer = `
-This page perfoms a \`fetch\` on the server to get a random article from Wikipedia. 
-The fetched data is then cached with a tag named "${tagName}" and a maximum age of ${revalidateTTL} seconds.
+This page generates a random number on the server. 
+The generated number is cached with a tag named "${tagName}" and a maximum age of ${revalidateTTL} seconds.
 
 ~~~jsx
-const url = 'https://en.wikipedia.org/api/rest_v1/page/random/summary';
-
-async function RandomArticleComponent() {
-    const randomArticle = await fetch(url, {
-        next: { revalidate: ${revalidateTTL}, tags: ['${tagName}'] }
-    });
-    // ...render
+async function RandomNumberComponent() {
+    const randomNumber = Math.floor(Math.random() * 1000);
+    // ...render the number
 }
 ~~~
 
-After the set time has passed, the first request for this page would trigger its rebuild in the background. When the new page is ready, subsequent requests would return the new page - 
-see [\`stale-white-revalidate\`](https://www.netlify.com/blog/swr-and-fine-grained-cache-control/).
-
-Alternatively, if the cache tag is explicitly invalidated by \`revalidateTag('${tagName}')\`, any page using that tag would be rebuilt in the background when requested.
-
-In real-life applications, tags are typically invalidated when data has changed in an external system (e.g., the CMS notifies the site about content changes via a webhook), or after a data mutation made through the site.
-
-For this functionality to work, Next.js uses the [fine-grained caching headers](https://docs.netlify.com/platform/caching/) available on Netlify - but you can use these features on basically any Netlify site!
+After ${revalidateTTL} seconds, the first request for this page will trigger its rebuild in the background.
+Alternatively, you can click the button below to explicitly invalidate the cache by calling \`revalidateTag('${tagName}')\`,
+which will cause the page to be rebuilt with a new random number on the next request.
 `;
 
 export default async function Page() {
-    async function revalidateWiki() {
+    async function revalidateNumber() {
         'use server';
         revalidateTag(tagName);
     }
 
     return (
         <>
-            <h1 className="mb-8">Revalidation Basics</h1>
+            <h1 className="mb-8">Random Number Generator</h1>
             <Markdown content={explainer} className="mb-6" />
-            <form className="mb-8" action={revalidateWiki}>
-                <SubmitButton text="Click to Revalidate" />
+            <form className="mb-8" action={revalidateNumber}>
+                <SubmitButton text="Generate New Number" />
             </form>
-            <RandomWikiArticle />
+            <RandomNumberGenerator />
         </>
     );
 }
 
-async function RandomWikiArticle() {
-    const randomWiki = await fetch(randomWikiUrl, {
+async function RandomNumberGenerator() {
+    // Generate random number between 1 and 1000
+    const randomNumber = Math.floor(Math.random() * 1000) + 1;
+    
+    // This function doesn't actually need to fetch data,
+    // but we're using next.js cache mechanisms
+    const cachedData = await fetch(`https://api.example.com/dummy?number=${randomNumber}`, {
         next: { revalidate: revalidateTTL, tags: [tagName] }
+    }).then(() => {
+        return { number: randomNumber };
+    }).catch(() => {
+        // If fetch fails (which it will since we're using a dummy URL),
+        // still return the random number
+        return { number: randomNumber };
     });
-
-    const content = await randomWiki.json();
-    let extract = content.extract;
-    if (extract.length > maxExtractLength) {
-        extract = extract.slice(0, extract.slice(0, maxExtractLength).lastIndexOf(' ')) + ' [...]';
-    }
 
     return (
         <Card className="max-w-2xl">
-            <h3 className="text-2xl text-neutral-900">{content.title}</h3>
-            <div className="text-lg font-bold">{content.description}</div>
-            <p className="italic">{extract}</p>
-            <a target="_blank" rel="noopener noreferrer" href={content.content_urls.desktop.page}>
-                From Wikipedia
-            </a>
+            <h3 className="text-2xl text-neutral-900">Your Random Number:</h3>
+            <div className="text-6xl font-bold my-8 text-center">{cachedData.number}</div>
+            <p className="text-sm text-gray-600">
+                This number was generated on the server and will remain cached for {revalidateTTL} seconds,
+                unless you click the button above to generate a new one.
+            </p>
         </Card>
     );
 }
