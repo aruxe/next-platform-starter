@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from 'react';
 import { Card } from 'components/card';
 
@@ -83,7 +85,7 @@ function SpinWheel() {
       <div className="relative w-64 h-64 md:w-80 md:h-80 mb-8">
         {/* Center pointer */}
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-4 z-10">
-          <div className="w-0 h-0 border-l-8 border-r-8 border-t-4 border-l-transparent border-r-transparent border-t-red-600"></div>
+          <div className="w-0 h-0 border-l-8 border-r-8 border-t-16 border-l-transparent border-r-transparent border-t-red-600"></div>
         </div>
         
         {/* Wheel */}
@@ -96,21 +98,20 @@ function SpinWheel() {
         >
           {sectors.map((sector, index) => {
             const angle = 360 / sectors.length;
-            const startAngle = index * angle;
-            const endAngle = (index + 1) * angle;
-            
             return (
               <div 
                 key={sector.id}
-                className="absolute top-0 left-0 w-full h-full"
+                className="absolute top-0 left-0 right-0 bottom-0 origin-bottom-center flex justify-center items-start pt-4"
                 style={{ 
-                  transform: `rotate(${startAngle}deg)`,
-                  backgroundColor: sector.color,
-                  clipPath: `polygon(50% 50%, 50% 0, ${50 + 50 * Math.cos((Math.PI * endAngle) / 180)}% ${50 - 50 * Math.sin((Math.PI * endAngle) / 180)}%, 50% 50%)`
+                  transform: `rotate(${index * angle}deg)`,
+                  clipPath: `polygon(50% 0%, 50% 50%, ${50 + 50 * Math.cos(Math.PI/sectors.length)}% ${50 - 50 * Math.sin(Math.PI/sectors.length)}%, ${50 + 50 * Math.cos(Math.PI/sectors.length - 2 * Math.PI/sectors.length)}% ${50 - 50 * Math.sin(Math.PI/sectors.length - 2 * Math.PI/sectors.length)}%, 50% 50%)`
                 }}
               >
-                <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 text-white font-bold text-center w-20">
-                  {sector.text}
+                <div 
+                  className="w-full h-full flex justify-center pt-4 font-bold text-white text-sm"
+                  style={{ backgroundColor: sector.color }}
+                >
+                  <span className="transform -rotate-90">{sector.text}</span>
                 </div>
               </div>
             );
